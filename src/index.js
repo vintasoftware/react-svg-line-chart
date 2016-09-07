@@ -3,54 +3,12 @@ import './index.css'
 import React, { PropTypes } from 'react'
 import classNames from 'classnames'
 
-const { arrayOf, bool, func, number, shape } = PropTypes
+const { arrayOf, bool, func, number, shape } = PropTypes;
 
-export default class LineChart {
-  static propTypes = {
-    activePoint: shape({
-      x: number,
-      y: number,
-    }),
-    data: arrayOf(shape({
-      x: number,
-      y: number,
-    })).isRequired,
-    formatX: func,
-    formatY: func,
-    hoveredPointRadius: number,
-    noarea: bool,
-    noaxis: bool,
-    nogrid: bool,
-    nolabel: bool,
-    nopath: bool,
-    nopoint: bool,
-    onPointHover: func,
-    pointRadius: number,
-    viewBoxHeight: number,
-    viewBoxWidth: number,
-    yLabelsNb: number,
-    yLabelsWidth: number,
-  }
+export default class LineChart extends React.Component {
 
-  static defaultProps = {
-    activePoint: {
-      x: null,
-      y: null,
-    },
-    data: [],
-    hoveredPointRadius: 6,
-    noarea: false,
-    noaxis: false,
-    nogrid: false,
-    nolabel: false,
-    nopath: false,
-    nopoint: false,
-    onPointHover: () => {},
-    pointRadius: 4,
-    viewBoxHeight: 300,
-    viewBoxWidth: 800,
-    yLabelsNb: 5,
-    yLabelsWidth: 40,
+  constructor(props) {
+    super(props);
   }
 
   /**
@@ -58,12 +16,12 @@ export default class LineChart {
    */
 
   getMinX() {
-    const { data } = this.props
+    const { data } = this.props;
     return data.length > 0 ? data[0].x : 0
   }
 
   getMaxX() {
-    const { data } = this.props
+    const { data } = this.props;
     return data.length > 0 ? data[data.length - 1].x : 0
   }
 
@@ -72,8 +30,8 @@ export default class LineChart {
   }
 
   getMaxY() {
-    const { data, yLabelsNb } = this.props
-    const maxY = data.length > 0 ? data.reduce((max, point) => point.y > max ? point.y : max, data[0].y) : 0
+    const { data, yLabelsNb } = this.props;
+    const maxY = data.length > 0 ? data.reduce((max, point) => point.y > max ? point.y : max, data[0].y) : 0;
     return Math.ceil(maxY / yLabelsNb) * yLabelsNb
   }
 
@@ -82,16 +40,16 @@ export default class LineChart {
    */
 
   getSvgX(x) {
-    const { data, nolabel, viewBoxWidth, yLabelsWidth } = this.props
-    const maxX = this.getMaxX()
-    const margin = (!nolabel ? yLabelsWidth * 2 : 0)
+    const { data, nolabel, viewBoxWidth, yLabelsWidth } = this.props;
+    const maxX = this.getMaxX();
+    const margin = (!nolabel ? yLabelsWidth * 2 : 0);
     return (x / maxX * (viewBoxWidth - margin))
   }
 
   getSvgY(y) {
-    const { data, nolabel, viewBoxHeight } = this.props
-    const heightWithoutLabels = viewBoxHeight - (!nolabel ? 20 : 0)
-    const maxY = this.getMaxY()
+    const { data, nolabel, viewBoxHeight } = this.props;
+    const heightWithoutLabels = viewBoxHeight - (!nolabel ? 20 : 0);
+    const maxY = this.getMaxY();
     return heightWithoutLabels - (y / maxY * heightWithoutLabels)
   }
 
@@ -100,25 +58,25 @@ export default class LineChart {
    */
 
   getGrid(chart) {
-    const { data, yLabelsNb } = this.props
-    const minX = this.getMinX()
-    const maxX = this.getMaxX()
-    const minY = 0
-    const gridX = []
-    const gridY = []
-    const maxY = this.getMaxY()
+    const { data, yLabelsNb, nogridX, nogridY } = this.props;
+    const minX = this.getMinX();
+    const maxX = this.getMaxX();
+    const minY = 0;
+    const gridX = [];
+    const gridY = [];
+    const maxY = this.getMaxY();
 
-    for (let i = minX; i <= maxX; i++) {
-      gridX.push(
-        <line
-          key={ 'linechart_grid_x_' + i }
-          x1={ this.getSvgX(i) }
-          y1={ this.getSvgY(minY) }
-          x2={ this.getSvgX(i) }
-          y2={ this.getSvgY(maxY) }
-        />
-      )
-    }
+    for (let i = 0; i < data.length; i++) {
+       gridX.push(
+         <line
+           key={ 'linechart_grid_x_' + i }
+           x1={ Number(this.getSvgX(data[i].x)) }
+           y1={ this.getSvgY(minY) }
+           x2={ this.getSvgX(data[i].x) }
+           y2={ Number(this.getSvgY(maxY)) }
+         />
+       )
+     }
 
     for (let i = minY; i <= maxY; i += Math.floor(maxY / yLabelsNb)) {
       gridY.push(
@@ -134,35 +92,48 @@ export default class LineChart {
 
     return (
       <g className="linechart_grid">
-        { gridX }
-        { gridY }
+        { nogridX ? [] : gridX }
+        { nogridY ? [] : gridY }
       </g>
     )
   }
 
   getPath() {
-    const { area, data } = this.props
-    let pathD = 'M ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(data[0].y) + ' '
+    const { area, data, data2 } = this.props;
+    const datas = [data, data2];
+    let paths = [];
 
-    data.map((point, i) => {
-      pathD += 'L ' + this.getSvgX(point.x) + ' ' + this.getSvgY(point.y) + ' '
-    })
+    for (let i = 0; i < datas.length; i += 1) {
+      let pathD = 'M ' + this.getSvgX(datas[i][0].x) + ' ' + this.getSvgY(datas[i][0].y) + ' ';
+
+      datas[i].map((point, i) => {
+        pathD += 'L ' + this.getSvgX(point.x) + ' ' + this.getSvgY(point.y) + ' '
+      });
+
+      paths.push(pathD);
+      pathD = '';
+
+    }
 
     return (
-      <path className="linechart_path" d={ pathD } />
+      <g>
+        { paths.map((path) =>
+          <path className="linechart_path" d={ path }/>
+        )}
+      </g>
     )
   }
 
   getArea() {
-    const { data } = this.props
-    let pathD = 'M ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(data[0].y) + ' '
+    const { data } = this.props;
+    let pathD = 'M ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(data[0].y) + ' ';
 
     data.map((point, i) => {
       pathD += 'L ' + this.getSvgX(point.x) + ' ' + this.getSvgY(point.y) + ' '
-    })
+    });
 
-    pathD += 'L ' + this.getSvgX(data[data.length - 1].x) + ' ' + this.getSvgY(0) + ' '
-    pathD += 'L ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(0) + ' '
+    pathD += 'L ' + this.getSvgX(data[data.length - 1].x) + ' ' + this.getSvgY(0) + ' ';
+    pathD += 'L ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(0) + ' ';
 
     return (
       <path className="linechart_area" d={ pathD } />
@@ -170,10 +141,10 @@ export default class LineChart {
   }
 
   getLabels() {
-    const { data, formatX, formatY, yLabelsNb } = this.props
-    const minX = this.getMinX()
-    const maxY = this.getMaxY()
-    const yLabelsRange = []
+    const { data, formatX, formatY, yLabelsNb } = this.props;
+    const minX = this.getMinX();
+    const maxY = this.getMaxY();
+    const yLabelsRange = [];
 
     for (let i = 0; i <= maxY; i += Math.floor(maxY / yLabelsNb)) {
       yLabelsRange.push(i)
@@ -190,7 +161,7 @@ export default class LineChart {
           { formatX ? formatX(point.x) : point.x }
         </text>
       </g>
-    ))
+    ));
 
     const yLabels = yLabelsRange.map((y) => (
       <g
@@ -203,7 +174,7 @@ export default class LineChart {
           { formatY ? formatY(y) : y }
         </text>
       </g>
-    ))
+    ));
 
     return (
       <g className="linechart_labels">
@@ -214,36 +185,49 @@ export default class LineChart {
   }
 
   getAxis() {
-    const { data } = this.props
-    const minX = this.getMinX()
-    const maxX = this.getMaxX()
-    const minY = this.getMinY()
-    const maxY = this.getMaxY()
+    const { data, noaxiX, noaxiYl, noaxiYr } = this.props;
+    const minX = this.getMinX();
+    const maxX = this.getMaxX();
+    const minY = this.getMinY();
+    const maxY = this.getMaxY();
 
     return (
       <g className="linechart_axis">
-        <line
-          x1={ this.getSvgX(minX) }
-          y1={ this.getSvgY(minY) }
-          x2={ this.getSvgX(maxX) }
-          y2={ this.getSvgY(minY) }
-        />
-        <line
-          x1={ this.getSvgX(minX) }
-          y1={ this.getSvgY(minY) }
-          x2={ this.getSvgX(minX) }
-          y2={ this.getSvgY(maxY) }
-        />
+        { noaxiX ? <line /> :
+          <line
+            x1={ this.getSvgX(minX) }
+            y1={ this.getSvgY(minY) }
+            x2={ this.getSvgX(maxX) }
+            y2={ this.getSvgY(minY) }
+            />
+        }
+        { noaxiYl ? <line /> :
+          <line
+            x1={ this.getSvgX(minX) }
+            y1={ this.getSvgY(minY) }
+            x2={ this.getSvgX(minX) }
+            y2={ this.getSvgY(maxY) }
+            />
+        }
+        { noaxiYr ? <line /> :
+          <line
+            x1={ this.getSvgX(maxX) }
+            y1={ this.getSvgY(minY) }
+            x2={ this.getSvgX(maxX) }
+            y2={ this.getSvgY(maxY) }
+            />
+        }
       </g>
     )
   }
 
   getPoints() {
-    const { activePoint, data, hoveredPointRadius, pointRadius } = this.props
+    const { activePoint, data, hoveredPointRadius, pointRadius, data2 } = this.props;
 
+    const datas = [data, data2];
     return (
       <g className="linechart_points">
-      {
+      { datas.map((data) =>
         data.map((point, i) => {
           return (
             <circle
@@ -257,7 +241,7 @@ export default class LineChart {
             />
           )
         })
-      }
+        )}
       </g>
     )
   }
@@ -276,14 +260,12 @@ export default class LineChart {
       viewBoxHeight,
       viewBoxWidth,
       yLabelsWidth,
-      ...props,
-    } = this.props
+    } = this.props;
 
     return (
       <svg
         className={ classNames('linechart', (!nolabel || !nopoint) && 'linechart-withPadding', className) }
         viewBox={ `0 0 ${viewBoxWidth} ${viewBoxHeight}` }
-        { ...props }
       >
         <g transform={`translate(${!nolabel ? yLabelsWidth : 0}, 0)`}>
           { !nogrid ? this.getGrid() : null }
@@ -297,3 +279,55 @@ export default class LineChart {
     )
   }
 }
+
+LineChart.defaultProps = {
+  activePoint: {
+    x: null,
+    y: null
+  },
+  data: [],
+  hoveredPointRadius: 6,
+  noarea: false,
+  noaxis: false,
+  nogrid: false,
+  nolabel: false,
+  nopath: false,
+  nopoint: false,
+  onPointHover: () => {},
+  pointRadius: 4,
+  viewBoxHeight: 300,
+  viewBoxWidth: 800,
+  yLabelsNb: 5,
+  yLabelsWidth: 40,
+  nogridX: false,
+  nogridY: false,
+  noaxiX: false,
+  noaxiYl: false,
+  noaxiYr: false
+};
+
+LineChart.propTypes = {
+  activePoint: shape({
+    x: number,
+    y: number
+  }),
+  data: arrayOf(shape({
+    x: number,
+    y: number
+  })).isRequired,
+  formatX: func,
+  formatY: func,
+  hoveredPointRadius: number,
+  noarea: bool,
+  noaxis: bool,
+  nogrid: bool,
+  nolabel: bool,
+  nopath: bool,
+  nopoint: bool,
+  onPointHover: func,
+  pointRadius: number,
+  viewBoxHeight: number,
+  viewBoxWidth: number,
+  yLabelsNb: number,
+  yLabelsWidth: number
+};
