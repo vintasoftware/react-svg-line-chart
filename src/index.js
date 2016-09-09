@@ -16,13 +16,17 @@ export default class LineChart extends React.Component {
    */
 
   getMinX() {
-    const { data } = this.props;
-    return data.length > 0 ? data[0].x : 0
+    const { data1, data2 } = this.props;
+    const minData1 = data1.length > 0 ? data1[0].x : 0;
+    const minData2 = data2.length > 0 ? data2[0].x : 0;
+    return Math.min(minData1, minData2);
   }
 
   getMaxX() {
-    const { data } = this.props;
-    return data.length > 0 ? data[data.length - 1].x : 0
+    const { data1, data2 } = this.props;
+    const maxData1 = data1.length > 0 ? data1[data1.length - 1].x : 0;
+    const maxData2 = data2.length > 0 ? data2[data2.length - 1].x : 0;
+    return Math.max(maxData1, maxData2);
   }
 
   getMinY() {
@@ -30,8 +34,10 @@ export default class LineChart extends React.Component {
   }
 
   getMaxY() {
-    const { data, yLabelsNb } = this.props;
-    const maxY = data.length > 0 ? data.reduce((max, point) => point.y > max ? point.y : max, data[0].y) : 0;
+    const { data1, data2, yLabelsNb } = this.props;
+    const maxData1 = data1.length > 0 ? data1.reduce((max, point) => point.y > max ? point.y : max, data1[0].y) : 0;
+    const maxData2 = data2.length > 0 ? data2.reduce((max, point) => point.y > max ? point.y : max, data2[0].y) : 0;
+    const maxY = Math.max(maxData1, maxData2);
     return Math.ceil(maxY / yLabelsNb) * yLabelsNb
   }
 
@@ -40,14 +46,14 @@ export default class LineChart extends React.Component {
    */
 
   getSvgX(x) {
-    const { data, nolabel, viewBoxWidth, yLabelsWidth } = this.props;
+    const { nolabel, viewBoxWidth, yLabelsWidth } = this.props;
     const maxX = this.getMaxX();
     const margin = (!nolabel ? yLabelsWidth * 2 : 0);
     return (x / maxX * (viewBoxWidth - margin))
   }
 
   getSvgY(y) {
-    const { data, nolabel, viewBoxHeight } = this.props;
+    const { nolabel, viewBoxHeight } = this.props;
     const heightWithoutLabels = viewBoxHeight - (!nolabel ? 20 : 0);
     const maxY = this.getMaxY();
     return heightWithoutLabels - (y / maxY * heightWithoutLabels)
@@ -57,22 +63,22 @@ export default class LineChart extends React.Component {
    * Svg components
    */
 
-  getGrid(chart) {
-    const { data, yLabelsNb, nogridX, nogridY } = this.props;
-    const minX = this.getMinX();
+  getGrid() {
+    const { data1, yLabelsNb, nogridX, nogridY } = this.props;
+    const minX = 0;
     const maxX = this.getMaxX();
     const minY = 0;
     const gridX = [];
     const gridY = [];
     const maxY = this.getMaxY();
 
-    for (let i = 0; i < data.length; i++) {
+    for (let i = 0; i < data1.length; i++) {
        gridX.push(
          <line
            key={ 'linechart_grid_x_' + i }
-           x1={ Number(this.getSvgX(data[i].x)) }
+           x1={ Number(this.getSvgX(data1[i].x)) }
            y1={ this.getSvgY(minY) }
-           x2={ this.getSvgX(data[i].x) }
+           x2={ this.getSvgX(data1[i].x) }
            y2={ Number(this.getSvgY(maxY)) }
          />
        )
@@ -99,8 +105,8 @@ export default class LineChart extends React.Component {
   }
 
   getPath() {
-    const { area, data, data2 } = this.props;
-    const datas = [data, data2];
+    const { data1, data2 } = this.props;
+    const datas = [data1, data2];
     let paths = [];
 
     for (let i = 0; i < datas.length; i += 1) {
@@ -125,15 +131,15 @@ export default class LineChart extends React.Component {
   }
 
   getArea() {
-    const { data } = this.props;
-    let pathD = 'M ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(data[0].y) + ' ';
+    const { data1 } = this.props;
+    let pathD = 'M ' + this.getSvgX(data1[0].x) + ' ' + this.getSvgY(data1[0].y) + ' ';
 
-    data.map((point, i) => {
+    data1.map((point, i) => {
       pathD += 'L ' + this.getSvgX(point.x) + ' ' + this.getSvgY(point.y) + ' '
     });
 
-    pathD += 'L ' + this.getSvgX(data[data.length - 1].x) + ' ' + this.getSvgY(0) + ' ';
-    pathD += 'L ' + this.getSvgX(data[0].x) + ' ' + this.getSvgY(0) + ' ';
+    pathD += 'L ' + this.getSvgX(data1[data1.length - 1].x) + ' ' + this.getSvgY(0) + ' ';
+    pathD += 'L ' + this.getSvgX(data1[0].x) + ' ' + this.getSvgY(0) + ' ';
 
     return (
       <path className="linechart_area" d={ pathD } />
@@ -141,7 +147,7 @@ export default class LineChart extends React.Component {
   }
 
   getLabels() {
-    const { data, formatX, formatY, yLabelsNb } = this.props;
+    const { data1, formatX, formatY, yLabelsNb } = this.props;
     const minX = this.getMinX();
     const maxY = this.getMaxY();
     const yLabelsRange = [];
@@ -150,7 +156,7 @@ export default class LineChart extends React.Component {
       yLabelsRange.push(i)
     }
 
-    const xLabels = data.filter((point) => (point.x & 1)).map((point) => (
+    const xLabels = data1.filter((point) => (point.x & 1)).map((point) => (
       <g
         key={ 'linechart_label_x_' + point.x }
         className="linechart_label"
@@ -185,7 +191,7 @@ export default class LineChart extends React.Component {
   }
 
   getAxis() {
-    const { data, noaxiX, noaxiYl, noaxiYr } = this.props;
+    const { noaxiX, noaxiYl, noaxiYr } = this.props;
     const minX = this.getMinX();
     const maxX = this.getMaxX();
     const minY = this.getMinY();
@@ -195,7 +201,7 @@ export default class LineChart extends React.Component {
       <g className="linechart_axis">
         { noaxiX ? <line /> :
           <line
-            x1={ this.getSvgX(minX) }
+            x1={ this.getSvgX(0) }
             y1={ this.getSvgY(minY) }
             x2={ this.getSvgX(maxX) }
             y2={ this.getSvgY(minY) }
@@ -203,9 +209,9 @@ export default class LineChart extends React.Component {
         }
         { noaxiYl ? <line /> :
           <line
-            x1={ this.getSvgX(minX) }
+            x1={ this.getSvgX(0) }
             y1={ this.getSvgY(minY) }
-            x2={ this.getSvgX(minX) }
+            x2={ this.getSvgX(0) }
             y2={ this.getSvgY(maxY) }
             />
         }
@@ -222,9 +228,9 @@ export default class LineChart extends React.Component {
   }
 
   getPoints() {
-    const { activePoint, data, hoveredPointRadius, pointRadius, data2 } = this.props;
+    const { activePoint, data1, hoveredPointRadius, pointRadius, data2 } = this.props;
 
-    const datas = [data, data2];
+    const datas = [data1, data2];
     return (
       <g className="linechart_points">
       { datas.map((data) =>
@@ -285,7 +291,8 @@ LineChart.defaultProps = {
     x: null,
     y: null
   },
-  data: [],
+  data1: [],
+  data2: [],
   hoveredPointRadius: 6,
   noarea: false,
   noaxis: false,
@@ -311,7 +318,11 @@ LineChart.propTypes = {
     x: number,
     y: number
   }),
-  data: arrayOf(shape({
+  data1: arrayOf(shape({
+    x: number,
+    y: number
+  })).isRequired,
+  data2: arrayOf(shape({
     x: number,
     y: number
   })).isRequired,
